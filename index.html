@@ -1,0 +1,776 @@
+<title>Estudio Tile Picker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* layout: sticky toolbar + catalog pill filter + search, grouped sections per catalog */
+    --bg: #f2f0ea;
+    --surface: #ffffff;
+    --ink: #221f1c;
+    --muted: #6f685f;
+    --line: #ddd6c9;
+    --accent: #9c6a26;
+    --accent-ink: #fffaf2;
+    --danger: #8a3b2a;
+    --danger-bg: #f6e8e3;
+    --pill-bg: #ece7db;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15130f;
+      --surface: #1f1c16;
+      --ink: #f1ece2;
+      --muted: #a79e8f;
+      --line: #352f26;
+      --accent: #dba34e;
+      --accent-ink: #1b1309;
+      --danger: #e2a08e;
+      --danger-bg: #3a2420;
+      --pill-bg: #2a251d;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15130f;
+    --surface: #1f1c16;
+    --ink: #f1ece2;
+    --muted: #a79e8f;
+    --line: #352f26;
+    --accent: #dba34e;
+    --accent-ink: #1b1309;
+    --danger: #e2a08e;
+    --danger-bg: #3a2420;
+    --pill-bg: #2a251d;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  h1, h2, .display {
+    font-family: "Fraunces", Georgia, serif;
+  }
+
+  header {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 10;
+    background: var(--bg);
+    padding-block: 18px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  header h1 {
+    margin: 0 0 4px;
+    font-size: clamp(22px, 3vw, 28px);
+    font-weight: 600;
+    text-wrap: balance;
+  }
+  header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13.5px;
+    max-width: 70ch;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-top: 14px;
+  }
+  .toolbar input[type="text"] {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: inherit;
+  }
+  .toolbar input[type="text"]:focus-visible,
+  button:focus-visible,
+  .card label:focus-within,
+  .pill:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .count {
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .btn {
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+
+  .remarks-row { margin-top: 10px; }
+  .remarks-row textarea {
+    width: 100%;
+    min-height: 54px;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-family: inherit;
+    background: var(--surface);
+    color: var(--ink);
+    resize: vertical;
+  }
+  .remarks-row label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+
+  .filter-row {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .filter-row input[type="search"] {
+    flex: 1;
+    min-width: 180px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 13.5px;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: inherit;
+  }
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .pill {
+    border: 1px solid var(--line);
+    background: var(--pill-bg);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 6px 13px;
+    font-size: 12.5px;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .pill.active {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+  }
+
+  main {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding-block: 20px 60px;
+  }
+
+  .result {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 22px;
+  }
+  .result.show { display: block; }
+  .result h2 { margin: 0 0 6px; font-size: 16px; }
+  .result p.hint { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+  .result textarea {
+    width: 100%;
+    min-height: 160px;
+    font-family: "IBM Plex Sans", monospace;
+    font-size: 12.5px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--ink);
+    resize: vertical;
+  }
+  .result-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .copy-status { font-size: 13px; color: var(--accent); display: none; }
+  .copy-status.show { display: inline; }
+  .download-note { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+
+  .validation {
+    display: none;
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .validation.show { display: block; }
+
+  .catalog-section { margin-top: 34px; }
+  .catalog-section:first-of-type { margin-top: 10px; }
+  .catalog-section.hidden-by-filter { display: none; }
+  .catalog-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0 0 4px;
+    flex-wrap: wrap;
+  }
+  .catalog-heading h2 { margin: 0; font-size: 19px; }
+  .catalog-heading .meta { font-size: 12.5px; color: var(--muted); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 16px;
+    margin-top: 14px;
+  }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .card.hidden-by-search { display: none; }
+  .card img { width: 100%; display: block; cursor: zoom-in; aspect-ratio: 1 / 1; object-fit: cover; }
+  .card .page-caption { padding: 8px 12px 0; font-size: 11px; color: var(--muted); }
+  .card .options { padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 2px; }
+  .card label { display: flex; align-items: center; gap: 9px; padding: 6px 2px; font-size: 13.5px; cursor: pointer; border-radius: 6px; }
+  .card label:hover { background: var(--bg); }
+  .card label input[type="checkbox"] { width: 17px; height: 17px; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
+  .card label .tile-name { flex: 1; min-width: 0; }
+  .card label .qty { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); flex-shrink: 0; }
+  .card label .qty input { width: 44px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; }
+  .card label .qty input:disabled { opacity: 0.4; }
+
+  .lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 8, 6, 0.88);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: max(20px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) max(20px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+    cursor: zoom-out;
+  }
+  .lightbox.show { display: flex; }
+  .lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; }
+  .lightbox .caption { position: fixed; bottom: max(16px, env(safe-area-inset-bottom, 0px)); color: #fff; font-size: 13px; text-align: center; }
+
+  footer {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 20px 0 max(24px, env(safe-area-inset-bottom, 0px));
+    color: var(--muted);
+    font-size: 12.5px;
+    border-top: 1px solid var(--line);
+  }
+  footer ul { margin: 6px 0 0; padding-left: 18px; }
+
+  #printSheet { display: none; }
+  @media print {
+    .no-print { display: none !important; }
+    #printSheet { display: block; }
+    body { background: #fff; color: #111; }
+  }
+  #printSheet h1 { font-size: 18px; margin: 0 0 2px; }
+  #printSheet .meta { color: #555; font-size: 12px; margin-bottom: 14px; }
+  #printSheet .remarks { border: 1px solid #ccc; border-radius: 6px; padding: 8px 10px; margin-bottom: 14px; font-size: 12px; }
+  #printSheet h2 { font-size: 14px; margin: 18px 0 8px; break-after: avoid; }
+  #printSheet h2 .src { font-weight: 400; font-size: 11px; color: #666; }
+  #printSheet .pick { display: flex; gap: 12px; border: 1px solid #ccc; border-radius: 8px; padding: 8px; margin-bottom: 8px; align-items: center; break-inside: avoid; }
+  #printSheet .pick img { width: 90px; height: 90px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+  #printSheet .pick-info h3 { margin: 0 0 3px; font-size: 13px; }
+  #printSheet .pick-info p { margin: 0; font-size: 11px; color: #555; }
+</style>
+
+<header class="no-print">
+  <h1 class="display">Estudio Tile Picker</h1>
+  <p>Pick every tile you'd like ordered as a physical sample, across all 9 Estudio Cerámico catalogs. When you're done, generate your list and send it to procurement.</p>
+  <div class="toolbar">
+    <input type="text" id="designerName" placeholder="Your name" autocomplete="name">
+    <span class="count"><span id="selCount">0</span> tile(s) selected</span>
+    <button class="btn btn-primary" id="generateBtn">Generate my list</button>
+  </div>
+  <div class="remarks-row">
+    <label for="remarks">Remarks (optional — notes for procurement, e.g. project, urgency, finish preference)</label>
+    <textarea id="remarks" placeholder="Any notes for procurement..."></textarea>
+  </div>
+  <div class="filter-row">
+    <input type="search" id="searchBox" placeholder="Search tile names...">
+    <div class="pills" id="catalogPills"></div>
+  </div>
+</header>
+
+<main>
+  <div class="validation no-print" id="validation"></div>
+
+  <div class="result no-print" id="result">
+    <h2 class="display">Your selections</h2>
+    <p class="hint" id="resultHint">Download the selection sheet (one file with every tile's image, name, quantity, and page) and send it to procurement. Copy to clipboard works too (text only, no images).</p>
+    <div class="result-actions">
+      <button class="btn btn-primary" id="downloadBtn" hidden>Download selection sheet (with images)</button>
+      <button class="btn btn-secondary" id="printBtn">Save as PDF</button>
+      <button class="btn btn-secondary" id="copyBtn">Copy to clipboard</button>
+      <span class="copy-status" id="copyStatus">Copied.</span>
+    </div>
+    <p class="download-note" id="downloadNote" hidden>A downloadable version with embedded images isn't available on this link — use Copy to clipboard instead; it has everything procurement needs to find each tile.</p>
+    <textarea id="resultText" readonly style="margin-top:12px;"></textarea>
+  </div>
+
+  <div id="printSheet"></div>
+
+  <div class="no-print" id="catalogSections"></div>
+</main>
+
+<footer class="no-print">
+  406 tile designs across 9 Estudio Cerámico catalogs (387 catalog images). Each image is labeled with its source file and catalog page. Tap any image to view it larger.
+  <ul>
+  <li>Motif Collection — GOLD MOROCCON.pdf (27 designs)</li>
+  <li>Tropical Jewel Collection — Tropical Estudio .pdf (13 designs)</li>
+  <li>Moroccan Collection — Estudio 20x20 cm.pdf (51 designs)</li>
+  <li>Live Life the Moroccan Way — Estudio 60x60 Morrocon Catalouge Jan 24.pdf (15 designs)</li>
+  <li>300×300mm Moroccan Collection — estudio_300x300mm_morroccan_ecatalogue_sep_26.pdf (26 designs)</li>
+  <li>Trend Collection 60×120cm — Trend Collectio 60x120 Catalogue 11 .pdf (11 designs)</li>
+  <li>Fullbody Decor — Full body Estudio .pdf (11 designs)</li>
+  <li>e decor — Ceramic Wall Tiles Collection 2024 — ESTUDIO SPECIAL e -DECOR.pdf (61 designs)</li>
+  <li>Estudio Gallery — 30 Panel Collection — estudio 30 panel Estudio Gallary.pdf (191 designs)</li>
+  </ul>
+</footer>
+
+<div class="lightbox" id="lightbox">
+  <img id="lightboxImg" src="" alt="">
+  <div class="caption" id="lightboxCaption"></div>
+</div>
+
+<script>
+// Catalog data assembled from docs/tile-selector/catalog-data/*.json by build.py.
+// Each catalog: { catalogId, catalogLabel, catalogFile, entries: [{ image, page, tiles: [names] }] }
+const CATALOGS = [{"catalogId":"motif","catalogLabel":"Motif Collection","catalogFile":"GOLD MOROCCON.pdf","entries":[{"image":"images/motif/tessel-coral.jpg","page":4,"tiles":["Tessel Coral"]},{"image":"images/motif/kaleidoscope.jpg","page":7,"tiles":["Kaleidoscope Blue","Kaleidoscope Rust"]},{"image":"images/motif/arabesque.jpg","page":11,"tiles":["Arabesque Pink","Arabesque Blue"]},{"image":"images/motif/wreath-ombre.jpg","page":15,"tiles":["Wreath Ombre"]},{"image":"images/motif/mandala.jpg","page":17,"tiles":["Mandala Sedona","Mandala Cadet Blue"]},{"image":"images/motif/blossom.jpg","page":21,"tiles":["Blossom White","Blossom Peach"]},{"image":"images/motif/fluer-de-lis.jpg","page":25,"tiles":["Fluer-De-Lis"]},{"image":"images/motif/liberty-flora-green.jpg","page":28,"tiles":["Liberty Flora Green"]},{"image":"images/motif/estrela.jpg","page":30,"tiles":["Estrela Bright","Estrela Dark"]},{"image":"images/motif/vintage-trefoil.jpg","page":34,"tiles":["Vintage Trefoil"]},{"image":"images/motif/batik-blue.jpg","page":37,"tiles":["Batik Blue"]},{"image":"images/motif/lattice.jpg","page":40,"tiles":["Lattice Blue","Lattice White"]},{"image":"images/motif/carnival.jpg","page":44,"tiles":["Red Carnival","Maze Carnival"]},{"image":"images/motif/damask.jpg","page":48,"tiles":["Damask Saje","Damask Pink"]},{"image":"images/motif/mural-silver.jpg","page":52,"tiles":["Mural Silver"]},{"image":"images/motif/teal-flora.jpg","page":54,"tiles":["Teal Flora"]},{"image":"images/motif/holy-gardenai.jpg","page":57,"tiles":["Holy Gardenai"]},{"image":"images/motif/juniper-gold.jpg","page":60,"tiles":["Juniper Gold"]},{"image":"images/motif/fauna-forest.jpg","page":62,"tiles":["Fauna Forest"]}]},{"catalogId":"tropical","catalogLabel":"Tropical Jewel Collection","catalogFile":"Tropical Estudio .pdf","entries":[{"image":"images/tropical/verdure.jpg","page":17,"tiles":["Verdure"]},{"image":"images/tropical/perennial.jpg","page":17,"tiles":["Perennial"]},{"image":"images/tropical/bryony.jpg","page":17,"tiles":["Bryony"]},{"image":"images/tropical/rain-forest.jpg","page":17,"tiles":["Rain Forest"]},{"image":"images/tropical/golden-blooms.jpg","page":17,"tiles":["Golden Blooms"]},{"image":"images/tropical/flowerets.jpg","page":17,"tiles":["Flowerets"]},{"image":"images/tropical/wood-flowers.jpg","page":17,"tiles":["Wood Flowers"]},{"image":"images/tropical/flora-charm.jpg","page":17,"tiles":["Flora Charm"]},{"image":"images/tropical/still-life-deco.jpg","page":18,"tiles":["Still Life Deco"]},{"image":"images/tropical/daffodilia.jpg","page":18,"tiles":["Daffodilia"]},{"image":"images/tropical/jade-garden.jpg","page":18,"tiles":["Jade Garden"]},{"image":"images/tropical/pink-blush.jpg","page":18,"tiles":["Pink Blush"]},{"image":"images/tropical/snow-flora.jpg","page":18,"tiles":["Snow Flora"]}]},{"catalogId":"20x20","catalogLabel":"Moroccan Collection","catalogFile":"Estudio 20x20 cm.pdf","entries":[{"image":"images/20x20/air-force-blue.jpg","page":2,"tiles":["Air Force Blue"]},{"image":"images/20x20/alfar-bosque.jpg","page":3,"tiles":["Alfar Bosque"]},{"image":"images/20x20/anchor-ash.jpg","page":4,"tiles":["Anchor Ash"]},{"image":"images/20x20/amber-star.jpg","page":5,"tiles":["Amber Star"]},{"image":"images/20x20/antiga.jpg","page":6,"tiles":["Antiga"]},{"image":"images/20x20/arctic-sea.jpg","page":7,"tiles":["Arctic Sea"]},{"image":"images/20x20/balanced-blue.jpg","page":8,"tiles":["Balanced Blue"]},{"image":"images/20x20/biscoti-celestial.jpg","page":9,"tiles":["Biscoti Celestial"]},{"image":"images/20x20/block-party.jpg","page":10,"tiles":["Block Party"]},{"image":"images/20x20/caramel-band.jpg","page":11,"tiles":["Caramel Band"]},{"image":"images/20x20/charcoal-stone.jpg","page":12,"tiles":["Charcoal Stone"]},{"image":"images/20x20/chiffon-tray.jpg","page":13,"tiles":["Chiffon Tray"]},{"image":"images/20x20/crema-aura.jpg","page":14,"tiles":["Crema Aura"]},{"image":"images/20x20/delos-tan.jpg","page":15,"tiles":["Delos Tan"]},{"image":"images/20x20/fossil-pick.jpg","page":16,"tiles":["Fossil Pick"]},{"image":"images/20x20/fossil-river.jpg","page":17,"tiles":["Fossil River"]},{"image":"images/20x20/fragmenta-graphite.jpg","page":18,"tiles":["Fragmenta Graphite"]},{"image":"images/20x20/golden-melody.jpg","page":19,"tiles":["Golden Melody"]},{"image":"images/20x20/hampton-sky.jpg","page":20,"tiles":["Hampton Sky"]},{"image":"images/20x20/heritage-hex.jpg","page":21,"tiles":["Heritage Hex"]},{"image":"images/20x20/lattice-silver.jpg","page":22,"tiles":["Lattice Silver"]},{"image":"images/20x20/lillian-blue.jpg","page":23,"tiles":["Lillian Blue"]},{"image":"images/20x20/lime-pebble.jpg","page":24,"tiles":["Lime Pebble"]},{"image":"images/20x20/lisbon-grige.jpg","page":25,"tiles":["Lisbon Grige"]},{"image":"images/20x20/lisbon-ocean.jpg","page":26,"tiles":["Lisbon Ocean"]},{"image":"images/20x20/lust-pastel.jpg","page":27,"tiles":["Lust Pastel"]},{"image":"images/20x20/maya-blue.jpg","page":28,"tiles":["Maya Blue"]},{"image":"images/20x20/mid-dark-brown.jpg","page":29,"tiles":["Mid Dark Brown"]},{"image":"images/20x20/mintons-blue.jpg","page":30,"tiles":["Mintons Blue"]},{"image":"images/20x20/olympic-denim.jpg","page":31,"tiles":["Olympic Denim"]},{"image":"images/20x20/pearl-river.jpg","page":32,"tiles":["Pearl River"]},{"image":"images/20x20/rodas-giallo-decor.jpg","page":33,"tiles":["Rodas Giallo Decor"]},{"image":"images/20x20/rodas-nero-decor.jpg","page":34,"tiles":["Rodas Nero Decor"]},{"image":"images/20x20/seal-jade.jpg","page":35,"tiles":["Seal Jade"]},{"image":"images/20x20/space-blue.jpg","page":36,"tiles":["Space Blue"]},{"image":"images/20x20/teal-story.jpg","page":37,"tiles":["Teal Story"]},{"image":"images/20x20/terraluz-canvas.jpg","page":38,"tiles":["Terraluz Canvas"]},{"image":"images/20x20/triangle-tranquility.jpg","page":39,"tiles":["Triangle Tranquility"]},{"image":"images/20x20/idyllic-olive.jpg","page":40,"tiles":["Idyllic Olive"]},{"image":"images/20x20/supera-teal.jpg","page":41,"tiles":["Supera Teal"]},{"image":"images/20x20/sublime-navy.jpg","page":42,"tiles":["Sublime Navy"]},{"image":"images/20x20/sublime-bottle.jpg","page":43,"tiles":["Sublime Bottle"]},{"image":"images/20x20/scandinavian-beige.jpg","page":44,"tiles":["Scandinavian Beige"]},{"image":"images/20x20/montage-lush.jpg","page":45,"tiles":["Montage Lush"]},{"image":"images/20x20/temporal-blue.jpg","page":46,"tiles":["Temporal Blue"]},{"image":"images/20x20/crest-aqua.jpg","page":47,"tiles":["Crest Aqua"]},{"image":"images/20x20/fleuron-beige.jpg","page":48,"tiles":["Fleuron Beige"]},{"image":"images/20x20/laurel-lush.jpg","page":49,"tiles":["Laurel Lush"]},{"image":"images/20x20/marino-forest.jpg","page":50,"tiles":["Marino Forest Decor 2","Marino Forest"]},{"image":"images/20x20/tan-gold.jpg","page":51,"tiles":["Tan Gold"]}]},{"catalogId":"60x60-moroccan","catalogLabel":"Live Life the Moroccan Way","catalogFile":"Estudio 60x60 Morrocon Catalouge Jan 24.pdf","entries":[{"image":"images/60x60-moroccan/ornate-firma.jpg","page":3,"tiles":["Ornate Firma"]},{"image":"images/60x60-moroccan/chestnut-firma.jpg","page":4,"tiles":["Chestnut Firma"]},{"image":"images/60x60-moroccan/chroma-quad.jpg","page":5,"tiles":["Chroma Quad"]},{"image":"images/60x60-moroccan/aqua-diamond.jpg","page":6,"tiles":["Aqua Diamond"]},{"image":"images/60x60-moroccan/kaleidoslab.jpg","page":7,"tiles":["Kaleidoslab"]},{"image":"images/60x60-moroccan/rust-lush.jpg","page":8,"tiles":["Rust Lush"]},{"image":"images/60x60-moroccan/facile-puzzle.jpg","page":9,"tiles":["Facile Puzzle"]},{"image":"images/60x60-moroccan/rare-contour.jpg","page":10,"tiles":["Rare Contour"]},{"image":"images/60x60-moroccan/melange-azure.jpg","page":11,"tiles":["Melange Azure"]},{"image":"images/60x60-moroccan/melange-rust.jpg","page":12,"tiles":["Melange Rust"]},{"image":"images/60x60-moroccan/tan-diamond.jpg","page":13,"tiles":["Tan Diamond"]},{"image":"images/60x60-moroccan/coal-diamond.jpg","page":14,"tiles":["Coal Diamond"]},{"image":"images/60x60-moroccan/abstrato-beige.jpg","page":15,"tiles":["Abstrato Beige"]},{"image":"images/60x60-moroccan/vintage-art-grey.jpg","page":16,"tiles":["Vintage Art Grey"]},{"image":"images/60x60-moroccan/vintage-art-beige.jpg","page":17,"tiles":["Vintage Art Beige"]}]},{"catalogId":"300x300-moroccan","catalogLabel":"300×300mm Moroccan Collection","catalogFile":"estudio_300x300mm_morroccan_ecatalogue_sep_26.pdf","entries":[{"image":"images/300x300-moroccan/florid-linea.jpg","page":7,"tiles":["Florid Linea"]},{"image":"images/300x300-moroccan/blue-ivy.jpg","page":8,"tiles":["Blue Ivy"]},{"image":"images/300x300-moroccan/dainty-lines.jpg","page":9,"tiles":["Dainty Lines"]},{"image":"images/300x300-moroccan/moroccan-motifs.jpg","page":10,"tiles":["Moroccan Motifs"]},{"image":"images/300x300-moroccan/mystique-flora.jpg","page":11,"tiles":["Mystique Flora"]},{"image":"images/300x300-moroccan/aqua-eleganza.jpg","page":12,"tiles":["Aqua Eleganza"]},{"image":"images/300x300-moroccan/moroccan-dream.jpg","page":13,"tiles":["Moroccan Dream"]},{"image":"images/300x300-moroccan/autumn-leaves.jpg","page":14,"tiles":["Autumn Leaves"]},{"image":"images/300x300-moroccan/florid-art-turquoise.jpg","page":15,"tiles":["Florid Art Turquoise"]},{"image":"images/300x300-moroccan/florid-art-beige.jpg","page":16,"tiles":["Florid Art Beige"]},{"image":"images/300x300-moroccan/floral-moire.jpg","page":17,"tiles":["Floral Moire"]},{"image":"images/300x300-moroccan/sylvan-sapphire.jpg","page":18,"tiles":["Sylvan Sapphire"]},{"image":"images/300x300-moroccan/linia-flora.jpg","page":19,"tiles":["Linia Flora"]},{"image":"images/300x300-moroccan/iris-decor.jpg","page":20,"tiles":["Iris Decor"]},{"image":"images/300x300-moroccan/iris-decor-fern.jpg","page":21,"tiles":["Iris Decor Fern"]},{"image":"images/300x300-moroccan/carolina-blue.jpg","page":22,"tiles":["Carolina Blue"]},{"image":"images/300x300-moroccan/alham-aqua.jpg","page":23,"tiles":["Alham Aqua"]},{"image":"images/300x300-moroccan/alham-grey.jpg","page":24,"tiles":["Alham Grey"]},{"image":"images/300x300-moroccan/bruno-blue.jpg","page":25,"tiles":["Bruno Blue"]},{"image":"images/300x300-moroccan/bruno-brown.jpg","page":26,"tiles":["Bruno Brown"]},{"image":"images/300x300-moroccan/rodin-green.jpg","page":27,"tiles":["Rodin Green"]},{"image":"images/300x300-moroccan/onice-dark.jpg","page":28,"tiles":["Onice Dark"]},{"image":"images/300x300-moroccan/azraq-amberz.jpg","page":29,"tiles":["Azraq Amberz"]},{"image":"images/300x300-moroccan/onice-light.jpg","page":30,"tiles":["Onice Light"]},{"image":"images/300x300-moroccan/ayaan-metal.jpg","page":31,"tiles":["Ayaan Metal"]},{"image":"images/300x300-moroccan/egal-bianco-metal.jpg","page":32,"tiles":["Egal Bianco Metal"]}]},{"catalogId":"trend-60x120","catalogLabel":"Trend Collection 60×120cm","catalogFile":"Trend Collectio 60x120 Catalogue 11 .pdf","entries":[{"image":"images/trend-60x120/rechal-green.jpg","page":4,"tiles":["Rechal Green"]},{"image":"images/trend-60x120/classic-urban.jpg","page":6,"tiles":["Classic Urban"]},{"image":"images/trend-60x120/nero-groove.jpg","page":8,"tiles":["Nero Groove"]},{"image":"images/trend-60x120/coprust.jpg","page":10,"tiles":["Coprust"]},{"image":"images/trend-60x120/azurust.jpg","page":12,"tiles":["Azurust"]},{"image":"images/trend-60x120/fulcrum.jpg","page":14,"tiles":["Fulcrum"]},{"image":"images/trend-60x120/oyster.jpg","page":16,"tiles":["Oyster"]},{"image":"images/trend-60x120/sestina-nero.jpg","page":18,"tiles":["Sestina Nero"]},{"image":"images/trend-60x120/sestina-amber.jpg","page":20,"tiles":["Sestina Amber"]},{"image":"images/trend-60x120/splendid.jpg","page":22,"tiles":["Splendid"]},{"image":"images/trend-60x120/melagne.jpg","page":24,"tiles":["Melagne"]}]},{"catalogId":"full-body","catalogLabel":"Fullbody Decor","catalogFile":"Full body Estudio .pdf","entries":[{"image":"images/full-body/trigon-omber.jpg","page":2,"tiles":["Trigon Omber"]},{"image":"images/full-body/trigon-beige.jpg","page":4,"tiles":["Trigon Beige"]},{"image":"images/full-body/pastal-gris.jpg","page":6,"tiles":["Pastal Gris"]},{"image":"images/full-body/modello-beige.jpg","page":8,"tiles":["Modello Beige"]},{"image":"images/full-body/labrinyth-aurum.jpg","page":10,"tiles":["Labrinyth Aurum"]},{"image":"images/full-body/geometria-bold.jpg","page":12,"tiles":["Geometria Bold"]},{"image":"images/full-body/geometria-lime.jpg","page":14,"tiles":["Geometria Lime"]},{"image":"images/full-body/carre-mettalio.jpg","page":16,"tiles":["Carre Mettalio"]},{"image":"images/full-body/elaborato-gold.jpg","page":18,"tiles":["Elaborato Gold"]},{"image":"images/full-body/diamond-peach.jpg","page":20,"tiles":["Diamond Peach"]},{"image":"images/full-body/modello-kota.jpg","page":22,"tiles":["Modello Kota"]}]},{"catalogId":"special-decor","catalogLabel":"e decor — Ceramic Wall Tiles Collection 2024","catalogFile":"ESTUDIO SPECIAL e -DECOR.pdf","entries":[{"image":"images/special-decor/nexus-gold.jpg","page":6,"tiles":["Nexus Gold"]},{"image":"images/special-decor/hexa-blossom-blue.jpg","page":7,"tiles":["Hexa Blossom Blue"]},{"image":"images/special-decor/smokey-petal-blue.jpg","page":8,"tiles":["Smokey Petal Blue"]},{"image":"images/special-decor/grigio-rosa.jpg","page":9,"tiles":["Grigio Rosa"]},{"image":"images/special-decor/vortex-oro.jpg","page":10,"tiles":["Vortex Oro"]},{"image":"images/special-decor/iris-ash.jpg","page":11,"tiles":["Iris Ash"]},{"image":"images/special-decor/oro-dynamo.jpg","page":12,"tiles":["Oro Dynamo"]},{"image":"images/special-decor/sculp-vert.jpg","page":13,"tiles":["Sculp Vert"]},{"image":"images/special-decor/karmello-chroma-set.jpg","page":14,"tiles":["Karmello Chroma","Karmello Chroma HL","Silver Metallic Base"]},{"image":"images/special-decor/gravel-primo.jpg","page":15,"tiles":["Gravel Primo"]},{"image":"images/special-decor/desert-suede.jpg","page":16,"tiles":["Desert Suede"]},{"image":"images/special-decor/surf-blanco.jpg","page":17,"tiles":["Surf Blanco"]},{"image":"images/special-decor/surf-vermeil.jpg","page":18,"tiles":["Surf Vermeil"]},{"image":"images/special-decor/vintage-paradise.jpg","page":19,"tiles":["Vintage Paradise"]},{"image":"images/special-decor/regal-drift.jpg","page":20,"tiles":["Regal Drift"]},{"image":"images/special-decor/iridecent-black.jpg","page":21,"tiles":["Iridecent Black"]},{"image":"images/special-decor/sterling-lace.jpg","page":22,"tiles":["Sterling Lace"]},{"image":"images/special-decor/iridescent-blue.jpg","page":23,"tiles":["Iridescent Blue"]},{"image":"images/special-decor/antique-crepe.jpg","page":24,"tiles":["Antique Crepe"]},{"image":"images/special-decor/nero-marquina.jpg","page":26,"tiles":["Nero Marquina"]},{"image":"images/special-decor/nero-eleganzo.jpg","page":27,"tiles":["Nero Eleganzo"]},{"image":"images/special-decor/nero-floral.jpg","page":28,"tiles":["Nero Floral"]},{"image":"images/special-decor/grigio-hexa.jpg","page":29,"tiles":["Grigio Hexa"]},{"image":"images/special-decor/abstract-mahogany.jpg","page":30,"tiles":["Abstract Mahogany"]},{"image":"images/special-decor/gridlock-celeste.jpg","page":31,"tiles":["Gridlock Celeste"]},{"image":"images/special-decor/cubist-rust.jpg","page":32,"tiles":["Cubist Rust"]},{"image":"images/special-decor/azzuro-stem-crema.jpg","page":33,"tiles":["Azzuro Stem Crema"]},{"image":"images/special-decor/nero-exotica.jpg","page":34,"tiles":["Nero Exotica"]},{"image":"images/special-decor/nero-aegean.jpg","page":35,"tiles":["Nero Aegean"]},{"image":"images/special-decor/nero-lush.jpg","page":36,"tiles":["Nero Lush"]},{"image":"images/special-decor/hexa-maroon-set.jpg","page":37,"tiles":["Hexa Maroon","Hexa Maroon HL","Gold Metallic Base"]},{"image":"images/special-decor/hexa-glitter-set.jpg","page":38,"tiles":["Hexa Glitter","Hexa Glitter HL","Gold Metallic Base"]},{"image":"images/special-decor/unco-fern-set.jpg","page":39,"tiles":["Unco Fern","Unco Fern HL","Silver Metallic Base"]},{"image":"images/special-decor/unco-gold-set.jpg","page":40,"tiles":["Unco Gold","Unco Gold HL","Gold Metallic Base"]},{"image":"images/special-decor/tropic-forest.jpg","page":41,"tiles":["Tropic Forest"]},{"image":"images/special-decor/trigon-motley.jpg","page":42,"tiles":["Trigon Motley"]},{"image":"images/special-decor/dusk-ritz.jpg","page":43,"tiles":["Dusk Ritz"]},{"image":"images/special-decor/pastel-ritz.jpg","page":44,"tiles":["Pastel Ritz"]},{"image":"images/special-decor/argento-punto.jpg","page":46,"tiles":["Argento Punto"]},{"image":"images/special-decor/midnight-flora.jpg","page":47,"tiles":["Midnight Flora"]},{"image":"images/special-decor/essence-thunder-crema.jpg","page":48,"tiles":["Essence Thunder Crema"]},{"image":"images/special-decor/arabian-crema-blue.jpg","page":49,"tiles":["Arabian Crema Blue"]},{"image":"images/special-decor/rustic-dalia.jpg","page":50,"tiles":["Rustic Dalia"]},{"image":"images/special-decor/royal-oro-blue.jpg","page":51,"tiles":["Royal Oro Blue"]},{"image":"images/special-decor/oscar-pietra.jpg","page":52,"tiles":["Oscar Pietra"]},{"image":"images/special-decor/emperador.jpg","page":53,"tiles":["Emperador"]},{"image":"images/special-decor/cerulean-prime.jpg","page":54,"tiles":["Cerulean Prime"]},{"image":"images/special-decor/arcade-pastel.jpg","page":55,"tiles":["Arcade Pastel"]},{"image":"images/special-decor/oxford-beige.jpg","page":56,"tiles":["Oxford Beige"]},{"image":"images/special-decor/blonde-mistique.jpg","page":57,"tiles":["Blonde Mistique"]},{"image":"images/special-decor/teal-charm.jpg","page":58,"tiles":["Teal Charm"]}]},{"catalogId":"gallery-panel","catalogLabel":"Estudio Gallery — 30 Panel Collection","catalogFile":"estudio 30 panel Estudio Gallary.pdf","entries":[{"image":"images/gallery-panel/air-force-blue.jpg","page":1,"tiles":["Air Force Blue"]},{"image":"images/gallery-panel/amber-star.jpg","page":1,"tiles":["Amber Star"]},{"image":"images/gallery-panel/anchor-ash.jpg","page":1,"tiles":["Anchor Ash"]},{"image":"images/gallery-panel/arctic-sea.jpg","page":1,"tiles":["Arctic Sea"]},{"image":"images/gallery-panel/beige-astronomy.jpg","page":1,"tiles":["Beige Astronomy"]},{"image":"images/gallery-panel/biscoti-celestial.jpg","page":1,"tiles":["Biscoti Celestial"]},{"image":"images/gallery-panel/caramel-band.jpg","page":1,"tiles":["Caramel Band"]},{"image":"images/gallery-panel/charcoal-stone.jpg","page":1,"tiles":["Charcoal Stone"]},{"image":"images/gallery-panel/chiffon-tray.jpg","page":1,"tiles":["Chiffon Tray"]},{"image":"images/gallery-panel/crema-aura.jpg","page":1,"tiles":["Crema Aura"]},{"image":"images/gallery-panel/eclectric-orchid.jpg","page":1,"tiles":["Eclectric Orchid"]},{"image":"images/gallery-panel/fossil-pick.jpg","page":1,"tiles":["Fossil Pick"]},{"image":"images/gallery-panel/fossil-river.jpg","page":1,"tiles":["Fossil River"]},{"image":"images/gallery-panel/lilac-ion.jpg","page":1,"tiles":["Lilac Ion"]},{"image":"images/gallery-panel/lime-pebble.jpg","page":1,"tiles":["Lime Pebble"]},{"image":"images/gallery-panel/maya-blue.jpg","page":1,"tiles":["Maya Blue"]},{"image":"images/gallery-panel/mid-dark-brown.jpg","page":1,"tiles":["Mid Dark Brown"]},{"image":"images/gallery-panel/olympic-denim.jpg","page":1,"tiles":["Olympic Denim"]},{"image":"images/gallery-panel/pearl-river.jpg","page":1,"tiles":["Pearl River"]},{"image":"images/gallery-panel/sand-dollar.jpg","page":1,"tiles":["Sand Dollar"]},{"image":"images/gallery-panel/seal-jade.jpg","page":1,"tiles":["Seal Jade"]},{"image":"images/gallery-panel/space-blue.jpg","page":1,"tiles":["Space Blue"]},{"image":"images/gallery-panel/spruce-stone.jpg","page":1,"tiles":["Spruce Stone"]},{"image":"images/gallery-panel/tan-gold.jpg","page":1,"tiles":["Tan Gold"]},{"image":"images/gallery-panel/thunder-grey.jpg","page":1,"tiles":["Thunder Grey"]},{"image":"images/gallery-panel/trombone-light.jpg","page":1,"tiles":["Trombone Light"]},{"image":"images/gallery-panel/turkish-mossaic.jpg","page":1,"tiles":["Turkish Mossaic"]},{"image":"images/gallery-panel/block-party.jpg","page":2,"tiles":["Block Party"]},{"image":"images/gallery-panel/chroma-fusion.jpg","page":2,"tiles":["Chroma Fusion"]},{"image":"images/gallery-panel/clean-canvas.jpg","page":2,"tiles":["Clean Canvas"]},{"image":"images/gallery-panel/heritage-hex.jpg","page":2,"tiles":["Heritage Hex"]},{"image":"images/gallery-panel/lattice-luxe.jpg","page":2,"tiles":["Lattice Luxe"]},{"image":"images/gallery-panel/lush-pastel.jpg","page":2,"tiles":["Lush Pastel"]},{"image":"images/gallery-panel/mosaic-medley.jpg","page":2,"tiles":["Mosaic Medley"]},{"image":"images/gallery-panel/oceanscape.jpg","page":2,"tiles":["Oceanscape"]},{"image":"images/gallery-panel/passionate-clash.jpg","page":2,"tiles":["Passionate Clash"]},{"image":"images/gallery-panel/patterned-paradise.jpg","page":2,"tiles":["Patterned Paradise"]},{"image":"images/gallery-panel/rangla-reverie.jpg","page":2,"tiles":["Rangla Reverie"]},{"image":"images/gallery-panel/ripples-of-rhythm.jpg","page":2,"tiles":["Ripples Of Rhythm"]},{"image":"images/gallery-panel/victorian-echo.jpg","page":2,"tiles":["Victorian Echo"]},{"image":"images/gallery-panel/balanced-blue.jpg","page":2,"tiles":["Balanced Blue"]},{"image":"images/gallery-panel/panda-palette.jpg","page":2,"tiles":["Panda Palette"]},{"image":"images/gallery-panel/rustic-romance.jpg","page":2,"tiles":["Rustic Romance"]},{"image":"images/gallery-panel/twilight-tones.jpg","page":2,"tiles":["Twilight Tones"]},{"image":"images/gallery-panel/whimsical-weave.jpg","page":2,"tiles":["Whimsical Weave"]},{"image":"images/gallery-panel/triangle-tranquility.jpg","page":2,"tiles":["Triangle Tranquility"]},{"image":"images/gallery-panel/agra-yellow.jpg","page":2,"tiles":["Agra Yellow"]},{"image":"images/gallery-panel/amber-skies.jpg","page":2,"tiles":["Amber Skies"]},{"image":"images/gallery-panel/cerulean-circle.jpg","page":2,"tiles":["Cerulean Circle"]},{"image":"images/gallery-panel/sandy-memory.jpg","page":2,"tiles":["Sandy Memory"]},{"image":"images/gallery-panel/teal-story.jpg","page":2,"tiles":["Teal Story"]},{"image":"images/gallery-panel/golden-melody.jpg","page":2,"tiles":["Golden Melody"]},{"image":"images/gallery-panel/sunset-nostalgia.jpg","page":2,"tiles":["Sunset Nostalgia"]},{"image":"images/gallery-panel/midnight-flower.jpg","page":2,"tiles":["Midnight Flower"]},{"image":"images/gallery-panel/moroccan-cyan.jpg","page":2,"tiles":["Moroccan Cyan"]},{"image":"images/gallery-panel/sterling-lace.jpg","page":3,"tiles":["Sterling Lace"]},{"image":"images/gallery-panel/sculp-vert.jpg","page":3,"tiles":["Sculp Vert"]},{"image":"images/gallery-panel/gravel-primo.jpg","page":3,"tiles":["Gravel Primo"]},{"image":"images/gallery-panel/antique-crepe.jpg","page":3,"tiles":["Antique Crepe"]},{"image":"images/gallery-panel/desert-suede.jpg","page":3,"tiles":["Desert Suede"]},{"image":"images/gallery-panel/iridecent-black.jpg","page":3,"tiles":["Iridecent Black"]},{"image":"images/gallery-panel/surf-blanco.jpg","page":3,"tiles":["Surf Blanco"]},{"image":"images/gallery-panel/surf-vermeil.jpg","page":3,"tiles":["Surf Vermeil"]},{"image":"images/gallery-panel/iridescent-blue.jpg","page":3,"tiles":["Iridescent Blue"]},{"image":"images/gallery-panel/silver-metallic-base-150.jpg","page":3,"tiles":["Silver Metallic Base"]},{"image":"images/gallery-panel/karmello-chroma.jpg","page":3,"tiles":["Karmello Chroma"]},{"image":"images/gallery-panel/gold-metallic-base-150.jpg","page":3,"tiles":["Gold Metallic Base"]},{"image":"images/gallery-panel/cerulean-prime.jpg","page":4,"tiles":["Cerulean Prime"]},{"image":"images/gallery-panel/oxford-beige.jpg","page":4,"tiles":["Oxford Beige"]},{"image":"images/gallery-panel/oscar-pietra.jpg","page":4,"tiles":["Oscar Pietra"]},{"image":"images/gallery-panel/arcade-pastel.jpg","page":4,"tiles":["Arcade Pastel"]},{"image":"images/gallery-panel/blonde-mistique.jpg","page":4,"tiles":["Blonde Mistique"]},{"image":"images/gallery-panel/teal-charm.jpg","page":4,"tiles":["Teal Charm"]},{"image":"images/gallery-panel/trigon-motley.jpg","page":5,"tiles":["Trigon Motley"]},{"image":"images/gallery-panel/hexa-maroon.jpg","page":5,"tiles":["Hexa Maroon"]},{"image":"images/gallery-panel/unco-gold.jpg","page":5,"tiles":["Unco Gold"]},{"image":"images/gallery-panel/tropic-forest.jpg","page":5,"tiles":["Tropic Forest"]},{"image":"images/gallery-panel/pastel-ritz.jpg","page":5,"tiles":["Pastel Ritz"]},{"image":"images/gallery-panel/dusk-ritz.jpg","page":5,"tiles":["Dusk Ritz"]},{"image":"images/gallery-panel/silver-metallic-base-hex.jpg","page":5,"tiles":["Silver Metallic Base"]},{"image":"images/gallery-panel/unco-fern.jpg","page":5,"tiles":["Unco Fern"]},{"image":"images/gallery-panel/gold-metallic-base-hex.jpg","page":5,"tiles":["Gold Metallic Base"]},{"image":"images/gallery-panel/hexa-glitter.jpg","page":5,"tiles":["Hexa Glitter"]},{"image":"images/gallery-panel/mural-silver.jpg","page":6,"tiles":["Mural Silver"]},{"image":"images/gallery-panel/teal-flora.jpg","page":6,"tiles":["Teal Flora"]},{"image":"images/gallery-panel/juniper-gold.jpg","page":6,"tiles":["Juniper Gold"]},{"image":"images/gallery-panel/holy-gardenai.jpg","page":6,"tiles":["Holy Gardenai"]},{"image":"images/gallery-panel/damask-pink.jpg","page":6,"tiles":["Damask Pink"]},{"image":"images/gallery-panel/damask-saje.jpg","page":6,"tiles":["Damask Saje"]},{"image":"images/gallery-panel/fauna-forest.jpg","page":6,"tiles":["Fauna Forest"]},{"image":"images/gallery-panel/red-carnival.jpg","page":6,"tiles":["Red Carnival"]},{"image":"images/gallery-panel/maze-carnival.jpg","page":6,"tiles":["Maze Carnival"]},{"image":"images/gallery-panel/tessel-coral.jpg","page":7,"tiles":["Tessel Coral"]},{"image":"images/gallery-panel/kaleidoscope-blue.jpg","page":7,"tiles":["Kaleidoscope Blue"]},{"image":"images/gallery-panel/arabesque-pink.jpg","page":7,"tiles":["Arabesque Pink"]},{"image":"images/gallery-panel/kaleidoscope-rust.jpg","page":7,"tiles":["Kaleidoscope Rust"]},{"image":"images/gallery-panel/arabesque-blue.jpg","page":7,"tiles":["Arabesque Blue"]},{"image":"images/gallery-panel/mandala-sedona.jpg","page":7,"tiles":["Mandala Sedona"]},{"image":"images/gallery-panel/wreath-ombre.jpg","page":7,"tiles":["Wreath Ombre"]},{"image":"images/gallery-panel/mandala-cadet-blue.jpg","page":7,"tiles":["Mandala Cadet Blue"]},{"image":"images/gallery-panel/liberty-flora-green.jpg","page":7,"tiles":["Liberty Flora Green"]},{"image":"images/gallery-panel/blossom-white.jpg","page":8,"tiles":["Blossom White"]},{"image":"images/gallery-panel/blossom-peach.jpg","page":8,"tiles":["Blossom Peach"]},{"image":"images/gallery-panel/fluer-de-lis.jpg","page":8,"tiles":["Fluer-De-Lis"]},{"image":"images/gallery-panel/estrela-bright.jpg","page":8,"tiles":["Estrela Bright"]},{"image":"images/gallery-panel/estrela-dark.jpg","page":8,"tiles":["Estrela Dark"]},{"image":"images/gallery-panel/vintage-trefoil.jpg","page":8,"tiles":["Vintage Trefoil"]},{"image":"images/gallery-panel/batik-blue.jpg","page":8,"tiles":["Batik Blue"]},{"image":"images/gallery-panel/lattice-blue.jpg","page":8,"tiles":["Lattice Blue"]},{"image":"images/gallery-panel/lattice-white.jpg","page":8,"tiles":["Lattice White"]},{"image":"images/gallery-panel/ayaan-metal.jpg","page":9,"tiles":["Ayaan Metal"]},{"image":"images/gallery-panel/egal-bianco-metal.jpg","page":9,"tiles":["Egal Bianco Metal"]},{"image":"images/gallery-panel/egal-coal-metal.jpg","page":9,"tiles":["Egal Coal Metal"]},{"image":"images/gallery-panel/alementary-yellow.jpg","page":9,"tiles":["Alementary Yellow"]},{"image":"images/gallery-panel/onice-light.jpg","page":9,"tiles":["Onice Light"]},{"image":"images/gallery-panel/onice-dark.jpg","page":9,"tiles":["Onice Dark"]},{"image":"images/gallery-panel/alham-grey.jpg","page":9,"tiles":["Alham Grey"]},{"image":"images/gallery-panel/alham-aqua.jpg","page":9,"tiles":["Alham Aqua"]},{"image":"images/gallery-panel/bruno-blue.jpg","page":9,"tiles":["Bruno Blue"]},{"image":"images/gallery-panel/rodin-green.jpg","page":9,"tiles":["Rodin Green"]},{"image":"images/gallery-panel/bruno-brown.jpg","page":9,"tiles":["Bruno Brown"]},{"image":"images/gallery-panel/seville-blue.jpg","page":9,"tiles":["Seville Blue"]},{"image":"images/gallery-panel/klimt.jpg","page":10,"tiles":["Klimt"]},{"image":"images/gallery-panel/azraq-amberz.jpg","page":10,"tiles":["Azraq Amberz"]},{"image":"images/gallery-panel/regal-glam.jpg","page":10,"tiles":["Regal Glam"]},{"image":"images/gallery-panel/carolina-blue.jpg","page":10,"tiles":["Carolina Blue"]},{"image":"images/gallery-panel/midnight-ocean.jpg","page":10,"tiles":["Midnight Ocean"]},{"image":"images/gallery-panel/pastel-blossom.jpg","page":10,"tiles":["Pastel Blossom"]},{"image":"images/gallery-panel/blue-ivy.jpg","page":10,"tiles":["Blue Ivy"]},{"image":"images/gallery-panel/pastel-garden.jpg","page":10,"tiles":["Pastel Garden"]},{"image":"images/gallery-panel/aqua-warren.jpg","page":10,"tiles":["Aqua Warren"]},{"image":"images/gallery-panel/florid-linea.jpg","page":10,"tiles":["Florid Linea"]},{"image":"images/gallery-panel/estrela-taupe.jpg","page":10,"tiles":["Estrela Taupe"]},{"image":"images/gallery-panel/flora-sepia.jpg","page":10,"tiles":["Flora Sepia"]},{"image":"images/gallery-panel/sylvan-sapphire.jpg","page":11,"tiles":["Sylvan Sapphire"]},{"image":"images/gallery-panel/spectra-decor.jpg","page":11,"tiles":["Spectra Decor"]},{"image":"images/gallery-panel/linia-flora.jpg","page":11,"tiles":["Linia Flora"]},{"image":"images/gallery-panel/iris-decor.jpg","page":11,"tiles":["Iris Decor"]},{"image":"images/gallery-panel/florid-lattice.jpg","page":11,"tiles":["Florid Lattice"]},{"image":"images/gallery-panel/damask-ecru.jpg","page":11,"tiles":["Damask Ecru"]},{"image":"images/gallery-panel/tumid-blue.jpg","page":11,"tiles":["Tumid Blue"]},{"image":"images/gallery-panel/abstract-art.jpg","page":11,"tiles":["Abstract Art"]},{"image":"images/gallery-panel/geometric-scroll-grey.jpg","page":11,"tiles":["Geometric Scroll Grey"]},{"image":"images/gallery-panel/zellige-blue.jpg","page":11,"tiles":["Zellige Blue"]},{"image":"images/gallery-panel/kaleido-decor-green.jpg","page":11,"tiles":["Kaleido Decor Green"]},{"image":"images/gallery-panel/estrela-blue.jpg","page":11,"tiles":["Estrela Blue"]},{"image":"images/gallery-panel/star-light.jpg","page":12,"tiles":["Star Light"]},{"image":"images/gallery-panel/esfera-foliage.jpg","page":12,"tiles":["Esfera Foliage"]},{"image":"images/gallery-panel/dainty-lines.jpg","page":12,"tiles":["Dainty Lines"]},{"image":"images/gallery-panel/moroccan-motifs.jpg","page":12,"tiles":["Moroccan Motifs"]},{"image":"images/gallery-panel/mystique-flora.jpg","page":12,"tiles":["Mystique Flora"]},{"image":"images/gallery-panel/aqua-eleganza.jpg","page":12,"tiles":["Aqua Eleganza"]},{"image":"images/gallery-panel/moroccan-dream.jpg","page":12,"tiles":["Moroccan Dream"]},{"image":"images/gallery-panel/geometric-scroll-black.jpg","page":12,"tiles":["Geometric Scroll Black"]},{"image":"images/gallery-panel/autumn-leaves.jpg","page":12,"tiles":["Autumn Leaves"]},{"image":"images/gallery-panel/florid-art-turquoise.jpg","page":12,"tiles":["Florid Art Turquoise"]},{"image":"images/gallery-panel/florid-art-beige.jpg","page":12,"tiles":["Florid Art Beige"]},{"image":"images/gallery-panel/floral-moire.jpg","page":12,"tiles":["Floral Moire"]},{"image":"images/gallery-panel/60602.jpg","page":13,"tiles":["60602"]},{"image":"images/gallery-panel/60603.jpg","page":13,"tiles":["60603"]},{"image":"images/gallery-panel/60601.jpg","page":13,"tiles":["60601"]},{"image":"images/gallery-panel/60604.jpg","page":13,"tiles":["60604"]},{"image":"images/gallery-panel/60610.jpg","page":13,"tiles":["60610"]},{"image":"images/gallery-panel/60606.jpg","page":13,"tiles":["60606"]},{"image":"images/gallery-panel/60611.jpg","page":14,"tiles":["60611"]},{"image":"images/gallery-panel/60633.jpg","page":14,"tiles":["60633"]},{"image":"images/gallery-panel/60639.jpg","page":14,"tiles":["60639"]},{"image":"images/gallery-panel/60648.jpg","page":14,"tiles":["60648"]},{"image":"images/gallery-panel/60649.jpg","page":14,"tiles":["60649"]},{"image":"images/gallery-panel/60650.jpg","page":14,"tiles":["60650"]},{"image":"images/gallery-panel/adorno-blue.jpg","page":15,"tiles":["Adorno Blue"]},{"image":"images/gallery-panel/scroll-lime.jpg","page":15,"tiles":["Scroll Lime"]},{"image":"images/gallery-panel/klim-decor-green.jpg","page":15,"tiles":["Klim Decor Green"]},{"image":"images/gallery-panel/treditional-lepiz.jpg","page":15,"tiles":["Treditional Lepiz"]},{"image":"images/gallery-panel/dazzel-shine.jpg","page":15,"tiles":["Dazzel Shine"]},{"image":"images/gallery-panel/tessell-gold.jpg","page":15,"tiles":["Tessell Gold"]},{"image":"images/gallery-panel/sestina-amber.jpg","page":16,"tiles":["Sestina Amber"]},{"image":"images/gallery-panel/sestina-nero.jpg","page":17,"tiles":["Sestina Nero"]},{"image":"images/gallery-panel/oyster.jpg","page":18,"tiles":["Oyster"]},{"image":"images/gallery-panel/azurust.jpg","page":19,"tiles":["Azurust"]},{"image":"images/gallery-panel/coprust.jpg","page":20,"tiles":["Coprust"]},{"image":"images/gallery-panel/nero-groove.jpg","page":21,"tiles":["Nero Groove"]},{"image":"images/gallery-panel/melagne.jpg","page":22,"tiles":["Melagne"]},{"image":"images/gallery-panel/classic-urban.jpg","page":23,"tiles":["Classic Urban"]},{"image":"images/gallery-panel/verdure.jpg","page":24,"tiles":["Verdure"]},{"image":"images/gallery-panel/wood-flowers.jpg","page":25,"tiles":["Wood Flowers"]},{"image":"images/gallery-panel/bryony.jpg","page":26,"tiles":["Bryony"]},{"image":"images/gallery-panel/perennial.jpg","page":27,"tiles":["Perennial"]},{"image":"images/gallery-panel/daffodilia.jpg","page":28,"tiles":["Daffodilia"]},{"image":"images/gallery-panel/rain-forest.jpg","page":29,"tiles":["Rain Forest"]},{"image":"images/gallery-panel/pink-blush.jpg","page":30,"tiles":["Pink Blush"]}]}];
+
+const catalogSections = document.getElementById("catalogSections");
+const catalogPillsEl = document.getElementById("catalogPills");
+const selCount = document.getElementById("selCount");
+let cardIndex = 0;
+let activeCatalog = "all";
+
+// ---- build pills ----
+function totalTiles(cat) { return cat.entries.reduce((n, e) => n + e.tiles.length, 0); }
+const allPill = document.createElement("button");
+allPill.className = "pill active";
+allPill.textContent = "All (" + CATALOGS.reduce((n, c) => n + totalTiles(c), 0) + ")";
+allPill.dataset.catalog = "all";
+catalogPillsEl.appendChild(allPill);
+CATALOGS.forEach(cat => {
+  const pill = document.createElement("button");
+  pill.className = "pill";
+  pill.textContent = cat.catalogLabel + " (" + totalTiles(cat) + ")";
+  pill.dataset.catalog = cat.catalogId;
+  catalogPillsEl.appendChild(pill);
+});
+catalogPillsEl.addEventListener("click", e => {
+  const btn = e.target.closest(".pill");
+  if (!btn) return;
+  activeCatalog = btn.dataset.catalog;
+  catalogPillsEl.querySelectorAll(".pill").forEach(p => p.classList.toggle("active", p === btn));
+  applyFilters();
+});
+
+// ---- build sections/cards ----
+CATALOGS.forEach(cat => {
+  const section = document.createElement("section");
+  section.className = "catalog-section";
+  section.dataset.catalog = cat.catalogId;
+
+  const heading = document.createElement("div");
+  heading.className = "catalog-heading";
+  const h2 = document.createElement("h2");
+  h2.className = "display";
+  h2.textContent = cat.catalogLabel;
+  const meta = document.createElement("span");
+  meta.className = "meta";
+  meta.textContent = totalTiles(cat) + " designs — " + cat.catalogFile;
+  heading.appendChild(h2);
+  heading.appendChild(meta);
+  section.appendChild(heading);
+
+  const grid = document.createElement("div");
+  grid.className = "grid";
+
+  cat.entries.forEach(entry => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.dataset.names = entry.tiles.join(" | ").toLowerCase();
+
+    const img = document.createElement("img");
+    img.src = entry.image;
+    img.loading = "lazy";
+    img.alt = entry.tiles.join(" / ");
+    img.addEventListener("click", () => openLightbox(entry.image, img.alt, cat.catalogFile + ", p." + entry.page));
+    card.appendChild(img);
+
+    const pageCaption = document.createElement("div");
+    pageCaption.className = "page-caption";
+    pageCaption.textContent = cat.catalogFile + ", p." + entry.page;
+    card.appendChild(pageCaption);
+
+    const opts = document.createElement("div");
+    opts.className = "options";
+    entry.tiles.forEach(name => {
+      cardIndex++;
+      const id = "tile-" + cardIndex;
+      const label = document.createElement("label");
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.id = id;
+      cb.value = name;
+      cb.dataset.catalogId = cat.catalogId;
+      cb.dataset.catalogLabel = cat.catalogLabel;
+      cb.dataset.catalogFile = cat.catalogFile;
+      cb.dataset.image = entry.image;
+      cb.dataset.page = entry.page;
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "tile-name";
+      nameSpan.textContent = name;
+
+      const qtyWrap = document.createElement("span");
+      qtyWrap.className = "qty";
+      const qtyInput = document.createElement("input");
+      qtyInput.type = "number";
+      qtyInput.min = "1";
+      qtyInput.value = "1";
+      qtyInput.disabled = true;
+      qtyInput.setAttribute("aria-label", "Quantity of " + name);
+      qtyInput.addEventListener("click", e => e.stopPropagation());
+      qtyWrap.appendChild(document.createTextNode("Qty"));
+      qtyWrap.appendChild(qtyInput);
+
+      cb.addEventListener("change", () => {
+        qtyInput.disabled = !cb.checked;
+        if (cb.checked && (!qtyInput.value || Number(qtyInput.value) < 1)) qtyInput.value = "1";
+        updateCount();
+      });
+
+      label.appendChild(cb);
+      label.appendChild(nameSpan);
+      label.appendChild(qtyWrap);
+      opts.appendChild(label);
+    });
+    card.appendChild(opts);
+    grid.appendChild(card);
+  });
+
+  section.appendChild(grid);
+  catalogSections.appendChild(section);
+});
+
+function updateCount() {
+  selCount.textContent = document.querySelectorAll('.card input[type="checkbox"]:checked').length;
+}
+
+function applyFilters() {
+  const term = document.getElementById("searchBox").value.trim().toLowerCase();
+  document.querySelectorAll(".catalog-section").forEach(section => {
+    const matchesCatalog = activeCatalog === "all" || section.dataset.catalog === activeCatalog;
+    section.classList.toggle("hidden-by-filter", !matchesCatalog);
+    if (!matchesCatalog) return;
+    let anyVisible = false;
+    section.querySelectorAll(".card").forEach(card => {
+      const match = !term || card.dataset.names.includes(term);
+      card.classList.toggle("hidden-by-search", !match);
+      if (match) anyVisible = true;
+    });
+    section.classList.toggle("hidden-by-filter", !anyVisible);
+  });
+}
+document.getElementById("searchBox").addEventListener("input", applyFilters);
+
+function openLightbox(src, alt, caption) {
+  document.getElementById("lightboxImg").src = src;
+  document.getElementById("lightboxImg").alt = alt;
+  document.getElementById("lightboxCaption").textContent = alt + " — " + caption;
+  document.getElementById("lightbox").classList.add("show");
+}
+document.getElementById("lightbox").addEventListener("click", () => {
+  document.getElementById("lightbox").classList.remove("show");
+});
+
+function showValidation(message) {
+  const el = document.getElementById("validation");
+  el.textContent = message;
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 5000);
+}
+
+let currentPicks = null;
+
+document.getElementById("generateBtn").addEventListener("click", () => {
+  const designer = document.getElementById("designerName").value.trim();
+  const remarks = document.getElementById("remarks").value.trim();
+  const checked = Array.from(document.querySelectorAll('.card input[type="checkbox"]:checked'));
+
+  if (!designer) { showValidation("Enter your name before generating your list."); return; }
+  if (checked.length === 0) { showValidation("Select at least one tile before generating your list."); return; }
+
+  const picks = checked.map(cb => {
+    const qtyInput = cb.closest("label").querySelector('input[type="number"]');
+    return {
+      name: cb.value,
+      qty: Math.max(1, Number(qtyInput.value) || 1),
+      page: cb.dataset.page,
+      image: cb.dataset.image,
+      catalogLabel: cb.dataset.catalogLabel,
+      catalogFile: cb.dataset.catalogFile,
+    };
+  });
+  currentPicks = { designer, remarks, picks };
+
+  // group by catalog for a readable, per-vendor-line summary
+  const byCatalog = new Map();
+  picks.forEach(p => {
+    const key = p.catalogLabel + "|" + p.catalogFile;
+    if (!byCatalog.has(key)) byCatalog.set(key, []);
+    byCatalog.get(key).push(p);
+  });
+
+  const lines = ["Designer: " + designer, "Tiles requested as samples (" + picks.length + "):", ""];
+  byCatalog.forEach((items, key) => {
+    const [label, file] = key.split("|");
+    lines.push(label + " (" + file + "):");
+    items.forEach(p => lines.push(" - " + p.name + "  (Qty: " + p.qty + ", p." + p.page + ")"));
+    lines.push("");
+  });
+  lines.push("Remarks: " + (remarks || "-"));
+
+  document.getElementById("resultText").value = lines.join("\n");
+  document.getElementById("result").classList.add("show");
+  document.getElementById("copyStatus").classList.remove("show");
+  document.getElementById("result").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+// Opened as a local file or on a plain webpage (not embedded as a Claude
+// Artifact) — no sandbox, so native downloads and window.print() both work
+// normally for anyone, no account needed. Inside the Claude Artifact sandbox
+// neither does: `downloads` requires a Claude account on the link, and
+// window.print()/native downloads are blocked outright for every visitor
+// regardless of account (confirmed by live testing against the published
+// artifact). See README "How it works" for the full story.
+const isStandalone = typeof claude === "undefined";
+
+let downloadsCapability = null;
+function showDownload() {
+  document.getElementById("downloadBtn").hidden = false;
+  document.getElementById("downloadNote").hidden = true;
+}
+async function useDownloads() {
+  if (isStandalone || !claude.use) return null;
+  try { return await claude.use("downloads"); } catch (err) { return null; }
+}
+function nativeDownload(filename, html) {
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+if (isStandalone) {
+  showDownload();
+} else {
+  // print() is blocked by the Claude Artifact sandbox for every visitor.
+  document.getElementById("printBtn").hidden = true;
+  useDownloads().then(d => {
+    downloadsCapability = d;
+    if (d) {
+      showDownload();
+    } else {
+      document.getElementById("resultHint").textContent =
+        "Copy the list below and send it to procurement (WhatsApp, email — your choice). It includes each tile's name, quantity, catalog file, and page number, so procurement can pull up the exact image.";
+    }
+  });
+}
+
+function blobToDataURL(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+async function buildSelectionSheetHtml(picks, designer, remarks) {
+  const uniqueImages = [...new Set(picks.map(p => p.image))];
+  const dataUrls = {};
+  for (const src of uniqueImages) {
+    const res = await fetch(src);
+    const blob = await res.blob();
+    dataUrls[src] = await blobToDataURL(blob);
+  }
+
+  const byCatalog = new Map();
+  picks.forEach(p => {
+    const key = p.catalogLabel + "|" + p.catalogFile;
+    if (!byCatalog.has(key)) byCatalog.set(key, []);
+    byCatalog.get(key).push(p);
+  });
+
+  let sectionsHtml = "";
+  byCatalog.forEach((items, key) => {
+    const [label, file] = key.split("|");
+    const rows = items.map(p => `
+      <div class="pick">
+        <img src="${dataUrls[p.image]}" alt="${escapeHtml(p.name)}">
+        <div class="pick-info">
+          <h3>${escapeHtml(p.name)}</h3>
+          <p>Qty: ${p.qty} &middot; page ${p.page}</p>
+        </div>
+      </div>`).join("\n");
+    sectionsHtml += `<h2>${escapeHtml(label)} <span class="src">${escapeHtml(file)}</span></h2>\n${rows}\n`;
+  });
+
+  return `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Tile selection — ${escapeHtml(designer)}</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; background: #f2f0ea; color: #221f1c; margin: 0; padding: 24px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 24px 0 10px; }
+  h2 .src { font-weight: 400; font-size: 12px; color: #6f685f; }
+  .meta { color: #6f685f; font-size: 13px; margin-bottom: 20px; }
+  .remarks { background: #fff; border: 1px solid #ddd6c9; border-radius: 8px; padding: 12px 14px; margin-bottom: 20px; font-size: 13.5px; }
+  .pick { display: flex; gap: 14px; background: #fff; border: 1px solid #ddd6c9; border-radius: 10px; padding: 10px; margin-bottom: 12px; align-items: center; }
+  .pick img { width: 110px; height: 110px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+  .pick-info h3 { margin: 0 0 4px; font-size: 15px; }
+  .pick-info p { margin: 0; font-size: 12.5px; color: #6f685f; }
+</style>
+</head>
+<body>
+  <h1>Tile sample selection</h1>
+  <p class="meta">Designer: ${escapeHtml(designer)} &middot; Generated ${new Date().toLocaleString()} &middot; ${picks.length} tile(s)</p>
+  ${remarks ? `<div class="remarks"><strong>Remarks:</strong> ${escapeHtml(remarks)}</div>` : ""}
+  ${sectionsHtml}
+</body>
+</html>`;
+}
+
+function buildPrintSheetMarkup(picks, designer, remarks) {
+  const byCatalog = new Map();
+  picks.forEach(p => {
+    const key = p.catalogLabel + "|" + p.catalogFile;
+    if (!byCatalog.has(key)) byCatalog.set(key, []);
+    byCatalog.get(key).push(p);
+  });
+
+  let sectionsHtml = "";
+  byCatalog.forEach((items, key) => {
+    const [label, file] = key.split("|");
+    const rows = items.map(p => `
+      <div class="pick">
+        <img src="${p.image}" alt="${escapeHtml(p.name)}">
+        <div class="pick-info">
+          <h3>${escapeHtml(p.name)}</h3>
+          <p>Qty: ${p.qty} &middot; page ${p.page}</p>
+        </div>
+      </div>`).join("\n");
+    sectionsHtml += `<h2>${escapeHtml(label)} <span class="src">${escapeHtml(file)}</span></h2>\n${rows}\n`;
+  });
+
+  return `
+    <h1>Tile sample selection</h1>
+    <p class="meta">Designer: ${escapeHtml(designer)} &middot; Generated ${new Date().toLocaleString()} &middot; ${picks.length} tile(s)</p>
+    ${remarks ? `<div class="remarks"><strong>Remarks:</strong> ${escapeHtml(remarks)}</div>` : ""}
+    ${sectionsHtml}`;
+}
+
+document.getElementById("printBtn").addEventListener("click", () => {
+  if (!currentPicks) return;
+  document.getElementById("printSheet").innerHTML = buildPrintSheetMarkup(currentPicks.picks, currentPicks.designer, currentPicks.remarks);
+  setTimeout(() => window.print(), 50);
+});
+
+document.getElementById("downloadBtn").addEventListener("click", async () => {
+  if (!currentPicks) return;
+  const status = document.getElementById("copyStatus");
+  const btn = document.getElementById("downloadBtn");
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = "Preparing…";
+  try {
+    const html = await buildSelectionSheetHtml(currentPicks.picks, currentPicks.designer, currentPicks.remarks);
+    const filename = "tile-selection-" + currentPicks.designer.trim().replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".html";
+    if (isStandalone) {
+      nativeDownload(filename, html);
+    } else {
+      const downloads = downloadsCapability || await useDownloads();
+      if (!downloads) throw new Error("unavailable");
+      await downloads.save({ filename, data: html });
+    }
+    status.textContent = "Downloaded.";
+    status.classList.add("show");
+    setTimeout(() => status.classList.remove("show"), 4000);
+  } catch (err) {
+    showValidation("Couldn't generate the download — try Copy to clipboard instead.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  const text = document.getElementById("resultText");
+  const status = document.getElementById("copyStatus");
+  try {
+    await navigator.clipboard.writeText(text.value);
+    status.textContent = "Copied.";
+  } catch (err) {
+    text.focus();
+    text.select();
+    status.textContent = "Couldn't auto-copy — text is selected, press Ctrl/Cmd+C.";
+  }
+  status.classList.add("show");
+  setTimeout(() => status.classList.remove("show"), 4000);
+});
+</script>
