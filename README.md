@@ -4,23 +4,40 @@ A one-time tool so designers can pick which tiles should be ordered as
 physical samples, across all 9 Estudio Cerámico catalogs on file (406 named
 designs).
 
-**Send designers the folder, not a link.** Zip this whole `tile-selector`
-folder (`artifact.html` + `images/`) and share it (email attachment,
-WhatsApp, OneDrive/Drive link — your choice). They unzip it and double-click
-`artifact.html`, which opens in their own browser (Edge/Chrome on Windows)
-with no account and no internet connection needed.
+**Send designers this link — nothing to unzip, nothing to install:**
 
-This replaced an earlier design that published the page as a Claude
-Artifact link. That's still useful as **your own quick preview** —
+**https://varundixit-gif.github.io/TileSelection/**
+
+It's hosted as a plain static site on GitHub Pages (repo:
+https://github.com/varundixit-gif/TileSelection), so it's a normal webpage
+like any other — no Claude account, no sandbox. Designers open the link in
+their own browser (Edge/Chrome on Windows), pick tiles, and the Download
+and Save-as-PDF buttons both work as real one-click actions. Verified live:
+page loads, all 388 catalog images return 200 (GitHub Pages serves from a
+case-sensitive filesystem, unlike macOS locally, so this was worth
+checking), and `isStandalone` detection correctly enables both buttons.
+
+To update the page later: edit the `catalog-data/*.json` files in this
+folder, run `python3 build.py`, then copy `artifact.html` to `index.html`
+and `images/` into a clone of the `TileSelection` repo, commit, and push to
+`main` — GitHub Pages redeploys automatically in under a minute.
+
+**Alternative: zip and share the folder directly**, if you'd rather not use
+the hosted link (e.g. offline designers). Zip this `tile-selector` folder
+(`artifact.html` + `images/`) and share it (OneDrive/Drive link, WhatsApp
+Desktop — not email, it's ~150MB). They unzip and double-click
+`artifact.html`; same no-sandbox behavior as the hosted link, since neither
+is a Claude Artifact.
+
+The Claude Artifact link is still useful as **your own quick preview** —
 https://claude.ai/artifact/KhnVBFgnJSiUsdcXpCPxim — but Claude Artifacts
 sandbox every visitor without a Claude account on the link out of all
 file-save paths (not just the `downloads` capability — native browser
 download and the print dialog are blocked too, confirmed by testing live
 against the published link signed out). Since none of the designers have
 Claude accounts, the Artifact link can never give them a real download.
-Opening the plain HTML file locally has no such sandbox, so download and
-print-to-PDF both work normally there — that's why the folder itself, not
-the Artifact link, is the one to send designers.
+That's why neither the Artifact link nor a claude.ai-hosted copy is what
+gets sent to designers — the GitHub Pages link above is.
 
 ## How it works
 
